@@ -3,19 +3,19 @@ import pandas as pd
 import numpy as np
 import os
 import json
+import plotly.graph_objects as go
 from data_generator import generate_dataset
 from sensor_processor import SENSOR_COLUMNS
 
 from predict import DisasterPredictor
 from utils import (
-    create_severity_pie_chart,
-    create_disaster_type_bar_chart,
-    create_sensor_heatmap,
-    create_probability_bar_chart,
-    create_confidence_gauge,
-    create_radar_chart,
-    create_stacked_bar_chart,
-    create_location_distribution,
+    severity_distribution_chart,
+    disaster_distribution_chart,
+    sensor_heatmap_chart,
+    prediction_gauge_chart,
+    radar_chart,
+    disaster_by_severity_chart,
+    sensor_distribution_chart,
 )
 
 # ─── Page Config ─────────────────────────────────────────────────────────────
@@ -574,14 +574,14 @@ elif page == "📊 Data Analysis":
         with dcol1:
             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
             st.markdown("**Disaster Type Distribution**")
-            fig = create_disaster_type_bar_chart(df)
+            fig = disaster_distribution_chart(df)
             st.plotly_chart(fig, use_container_width=True, key="dist_bar")
             st.markdown('</div>', unsafe_allow_html=True)
 
         with dcol2:
             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
             st.markdown("**Severity Level Distribution**")
-            fig = create_severity_pie_chart(df)
+            fig = severity_distribution_chart(df)
             st.plotly_chart(fig, use_container_width=True, key="dist_pie")
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -616,8 +616,8 @@ elif page == "📊 Data Analysis":
 
         with scol2:
             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.markdown(f"**Sensor Correlation Heatmap** (highlighting {selected_sensor.replace('_', ' ').title()})")
-            fig = create_sensor_heatmap(df, highlight=selected_sensor)
+            st.markdown("**Sensor Correlation Heatmap**")
+            fig = sensor_heatmap_chart(df)
             st.plotly_chart(fig, use_container_width=True, key="heatmap")
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -628,14 +628,14 @@ elif page == "📊 Data Analysis":
         with ccol1:
             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
             st.markdown("**Disaster Type × Severity**")
-            fig = create_stacked_bar_chart(df)
+            fig = disaster_by_severity_chart(df)
             st.plotly_chart(fig, use_container_width=True, key="cross_stacked")
             st.markdown('</div>', unsafe_allow_html=True)
 
         with ccol2:
             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.markdown("**Location Distribution by Disaster Type**")
-            fig = create_location_distribution(df)
+            st.markdown("**Sensor Distribution by Disaster Type**")
+            fig = sensor_distribution_chart(df, "seismic_activity")
             st.plotly_chart(fig, use_container_width=True, key="cross_loc")
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -729,12 +729,13 @@ elif page == "🔮 Predict":
             sensor_data = {
                 "seismic_activity": seismic_activity,
                 "ground_vibration": ground_vibration,
-                "temperature": temperature,
-                "humidity": humidity,
-                "wind_speed": wind_speed,
-                "pressure": pressure,
-                "rainfall": rainfall,
-                "water_level": water_level,
+                "temperature_c": temperature,
+                "humidity_pct": humidity,
+                "wind_speed_kmh": wind_speed,
+                "air_pressure_hpa": pressure,
+                "rainfall_mm": rainfall,
+                "water_level_m": water_level,
+                "visibility_km": 5.0,
             }
 
             with st.spinner("🔄 Analyzing multi-modal data..."):
@@ -818,20 +819,37 @@ elif page == "🔮 Predict":
             with chart_col1:
                 st.markdown('<div class="glass-card">', unsafe_allow_html=True)
                 st.markdown("**📊 Confidence Gauge**")
-                fig = create_confidence_gauge(confidence, predicted_type)
+                fig = prediction_gauge_chart(confidence, title=f"{predicted_type.title()} Confidence")
                 st.plotly_chart(fig, use_container_width=True, key="pred_gauge")
                 st.markdown('</div>', unsafe_allow_html=True)
 
             with chart_col2:
                 st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-                st.markdown("**📊 Probability Bar Chart**")
-                fig = create_probability_bar_chart(probabilities)
+                st.markdown("**📊 Probability Distribution**")
+                sorted_probs = sorted(probabilities.items(), key=lambda x: x[1], reverse=True)
+                ptypes = [p[0].title() for p in sorted_probs]
+                pvals = [p[1] * 100 for p in sorted_probs]
+                fig = go.Figure(data=[go.Bar(
+                    x=ptypes, y=pvals,
+                    marker=dict(color=["#FF5722" if p[0] == predicted_type else "#a0a0b8" for p in sorted_probs]),
+                    text=[f"{v:.1f}%" for v in pvals], textposition="auto",
+                    textfont=dict(color="#fff"),
+                )])
+                fig.update_layout(
+                    font=dict(family="Inter, sans-serif", color="#e0e0e0"),
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                    xaxis=dict(color="#8892a4"),
+                    yaxis=dict(title="Probability (%)", color="#8892a4", gridcolor="rgba(255,255,255,0.05)"),
+                    margin=dict(l=20, r=20, t=20, b=20), height=300,
+                )
                 st.plotly_chart(fig, use_container_width=True, key="pred_bar")
                 st.markdown('</div>', unsafe_allow_html=True)
 
             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
             st.markdown("**🕸️ Multi-Sensor Radar Profile**")
-            fig = create_radar_chart(sensor_data)
+            from sensor_processor import SENSOR_COLUMNS
+            sensor_stats = {col: {"mean": float(df[col].mean()), "std": float(df[col].std())} for col in SENSOR_COLUMNS}
+            fig = radar_chart(sensor_data, sensor_stats)
             st.plotly_chart(fig, use_container_width=True, key="pred_radar")
             st.markdown('</div>', unsafe_allow_html=True)
 
