@@ -68,14 +68,28 @@ section[data-testid="stSidebar"] .stRadio [aria-checked="true"] {
 .stApp {
     background: var(--bg-dark);
     color: var(--text-primary);
+    position: relative;
+    z-index: 1;
+}
+
+.stApp > header {
+    visibility: visible !important;
+}
+
+section[data-testid="stSidebar"] {
+    z-index: 2 !important;
+}
+
+.stButton > button {
+    z-index: 10 !important;
 }
 
 .particles {
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    pointer-events: none;
-    z-index: 0;
+    pointer-events: none !important;
+    z-index: -1;
     overflow: hidden;
 }
 .particle {
