@@ -1,0 +1,14 @@
+[build]
+builder = "nixpacks"
+buildCommand = "pip install -r requirements.txt && python train.py"
+
+[deploy]
+startCommand = "streamlit run app.py --server.port=$PORT --server.address=0.0.0.0 --server.headless=true"
+healthcheckPath = "/"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[env]
+STREAMLIT_SERVER_HEADLESS = "true"
+STREAMLIT_BROWSER_GATHER_USAGE_STATS = "false"
