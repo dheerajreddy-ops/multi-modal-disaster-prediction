@@ -32,9 +32,9 @@ class MultiModalDisasterModel:
             class_weight="balanced",
         )
         self.severity_clf = GradientBoostingClassifier(
-            n_estimators=80,
+            n_estimators=50,
             max_depth=4,
-            learning_rate=0.15,
+            learning_rate=0.2,
             random_state=42,
             subsample=0.8,
         )
@@ -55,20 +55,17 @@ class MultiModalDisasterModel:
 
     def train(self, text_features, sensor_features, disaster_labels, severity_labels):
         X = self._combine_features(text_features, sensor_features)
+        disaster_labels = np.array(disaster_labels)
+        severity_labels = np.array(severity_labels)
 
         self.disaster_clf.fit(X, disaster_labels)
         self.severity_clf.fit(X, severity_labels)
 
         self.is_trained = True
 
-        disaster_cv = cross_val_score(self.disaster_clf, X, disaster_labels, cv=3, scoring="accuracy")
-        severity_cv = cross_val_score(self.severity_clf, X, severity_labels, cv=3, scoring="accuracy")
-
         return {
-            "disaster_accuracy": round(float(disaster_cv.mean()), 4),
-            "disaster_std": round(float(disaster_cv.std()), 4),
-            "severity_accuracy": round(float(severity_cv.mean()), 4),
-            "severity_std": round(float(severity_cv.std()), 4),
+            "disaster_classes": list(self.disaster_clf.classes_),
+            "severity_classes": list(self.severity_clf.classes_),
         }
 
     def predict(self, text_features, sensor_features):

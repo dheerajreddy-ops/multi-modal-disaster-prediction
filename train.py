@@ -65,13 +65,13 @@ def train_pipeline():
     print("[3/5] Training multi-modal fusion model...")
     t0 = time.time()
     model = MultiModalDisasterModel(n_estimators=100, max_depth=15)
-    metrics = model.train(
+    result = model.train(
         text_features, sensor_features,
         df["disaster_type"].values,
         df["severity"].values,
     )
-    print(f"  Disaster classification CV accuracy: {metrics['disaster_accuracy']:.4f} (+/- {metrics['disaster_std']:.4f})")
-    print(f"  Severity classification CV accuracy: {metrics['severity_accuracy']:.4f} (+/- {metrics['severity_std']:.4f})")
+    print(f"  Disaster classes: {result['disaster_classes']}")
+    print(f"  Severity classes: {result['severity_classes']}")
     print(f"  Time: {time.time() - t0:.2f}s")
 
     print("[4/5] Evaluating on full dataset...")
@@ -121,7 +121,7 @@ def train_pipeline():
         "text_features": text_processor.n_features,
         "sensor_features": sensor_processor.n_features,
         "total_features": text_processor.n_features + sensor_processor.n_features,
-        "cv_metrics": metrics,
+        "training_result": result,
         "sensor_stats": sensor_stats,
     }
 
